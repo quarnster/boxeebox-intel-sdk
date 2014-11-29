@@ -434,6 +434,18 @@ ExternalProject_Add(
 	DEPENDS core
 )
 
+
+ExternalProject_Add(
+	bufmon
+	URL 				${CMAKE_SOURCE_DIR}/bufmon-None-SRC-13.11.10484.229643.tgz
+	SOURCE_DIR 			bufmon
+	BINARY_DIR 			bufmon/IntelCE/bufmon-13.11.10484.229643
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core
+)
+
 #ExternalProject_Add(
 #	sec
 #	URL 				${CMAKE_SOURCE_DIR}/sec.tar.gz
