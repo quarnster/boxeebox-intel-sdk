@@ -446,6 +446,18 @@ ExternalProject_Add(
 	DEPENDS core
 )
 
+ExternalProject_Add(
+	graphics
+	URL 				${CMAKE_SOURCE_DIR}/graphics.tar.gz
+	SOURCE_DIR 			graphics
+	BINARY_DIR 			graphics/eurasia_km
+	PATCH_COMMAND		${CMAKE_COMMAND} -E tar xvfz graphics/src/gfx_km_src.tgz
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		INTEL_D3_CHANGES=1 INSTALL_FSROOT=${BUILD_DEST} SUPPORT_SGX=1 SUPPORT_DRI_DRM=1 DISP_ROOT=${CMAKE_BINARY_DIR}/display/display GFX_ROOT=${CMAKE_BINARY_DIR}/display/display ${SMD_MAKE}
+	DEPENDS kernel
+)
+
 #ExternalProject_Add(
 #	sec
 #	URL 				${CMAKE_SOURCE_DIR}/sec.tar.gz
