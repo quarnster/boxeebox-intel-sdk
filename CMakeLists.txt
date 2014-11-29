@@ -414,6 +414,25 @@ ExternalProject_Add(
 	DEPENDS core
 )
 
+ExternalProject_Add(
+	avcap
+	URL 				${CMAKE_SOURCE_DIR}/avcap-DUAL-SRC-13.11.10504.232647.tgz
+	SOURCE_DIR 			avcap
+	BINARY_DIR 			avcap/IntelCE/avcap-13.11.10504.232647
+	PATCH_COMMAND		sed -i -e "62a #include <linux/slab.h>" IntelCE/avcap-13.11.10504.232647/src/kernel/core/avcap_core_queue.c
+		COMMAND			sed -i -e "61a #include <linux/slab.h>" IntelCE/avcap-13.11.10504.232647/src/kernel/native_synthetic/synth_render.c
+		COMMAND			sed -i -e "69d" IntelCE/avcap-13.11.10504.232647/Makefile
+		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/lib/libvidcap_user/Makefile
+		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/lib/libvidcap_kernel/Makefile
+		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/kernel/core/Makefile
+		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/kernel/native_synthetic/Makefile
+		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/repeater/platform/custom/Makefile
+		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/repeater/platform/internal/Makefile
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core
+)
 
 #ExternalProject_Add(
 #	sec
