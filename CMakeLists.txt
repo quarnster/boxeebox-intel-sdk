@@ -389,6 +389,21 @@ ExternalProject_Add(
 	DEPENDS vidpproc_fw common
 )
 
+ExternalProject_Add(
+	vidrend
+	URL 				${CMAKE_SOURCE_DIR}/vidrend-None-SRC-13.11.10504.232647.tgz
+	SOURCE_DIR 			vidrend
+	BINARY_DIR 			vidrend/IntelCE/vidrend-13.11.10504.232647
+	PATCH_COMMAND		sed -i -e "419,421d" -e "5774,5820d" -e "5823,5857d" IntelCE/vidrend-13.11.10504.232647/ismd_vidrend.c
+		COMMAND			sed -i -e "291,293d" IntelCE/vidrend-13.11.10504.232647/vidrend.h
+		COMMAND			sed -i -e "849,856d" -e "859d" IntelCE/vidrend-13.11.10504.232647/vidrend_th.c
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core
+)
+
+
 
 #ExternalProject_Add(
 #	sec
