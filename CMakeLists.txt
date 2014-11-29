@@ -403,6 +403,16 @@ ExternalProject_Add(
 	DEPENDS core
 )
 
+ExternalProject_Add(
+	tsout
+	URL 				${CMAKE_SOURCE_DIR}/tsout-None-SRC-13.11.10484.229643.tgz
+	SOURCE_DIR 			tsout
+	BINARY_DIR 			tsout/IntelCE/tsout-13.11.10484.229643
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core
+)
 
 
 #ExternalProject_Add(
