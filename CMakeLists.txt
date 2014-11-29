@@ -321,6 +321,31 @@ ExternalProject_Add(
 	DEPENDS core clock_recovery
 )
 
+ExternalProject_Add(
+	viddec_fw
+	URL 				${CMAKE_SOURCE_DIR}/viddec_fw-SRC-13.11.10504.232647.tgz
+	SOURCE_DIR 			viddec_fw
+	BINARY_DIR 			viddec_fw/IntelCE/viddec_fw-13.11.10504.232647
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core
+)
+
+ExternalProject_Add(
+	viddec
+	URL 				${CMAKE_SOURCE_DIR}/viddec-DUAL-SRC-13.11.10504.232647.tgz
+	SOURCE_DIR 			viddec
+	BINARY_DIR 			viddec/IntelCE/viddec-13.11.10504.232647
+	PATCH_COMMAND		sed -i -e "242d" -e "252d" -e "264,268d" IntelCE/viddec-13.11.10504.232647/src/ismd_viddec_pvt.h
+		COMMAND 		sed -i -e "238d" -e "248d" -e "260,265d" IntelCE/viddec-13.11.10504.232647/version2/src/ismd_viddec_pvt.h
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core viddec_fw
+)
+
+
 #ExternalProject_Add(
 #	sec
 #	URL 				${CMAKE_SOURCE_DIR}/sec.tar.gz
