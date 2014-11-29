@@ -342,7 +342,51 @@ ExternalProject_Add(
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
-	DEPENDS core viddec_fw
+	DEPENDS viddec_fw
+)
+
+ExternalProject_Add(
+	common
+	URL 				${CMAKE_SOURCE_DIR}/common.tar.gz
+	SOURCE_DIR 			common
+	BINARY_DIR 			common/common
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core
+)
+
+ExternalProject_Add(
+	ipclib
+	URL 				${CMAKE_SOURCE_DIR}/ipclib-None-SRC-13.11.10484.229643.tgz
+	SOURCE_DIR 			ipclib
+	BINARY_DIR 			ipclib/IntelCE/ipclib-13.11.10484.229643
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core
+)
+
+ExternalProject_Add(
+	vidpproc_fw
+	URL 				${CMAKE_SOURCE_DIR}/vidpproc_fw-SRC-13.11.10484.229643.tgz
+	SOURCE_DIR 			vidpproc_fw
+	BINARY_DIR 			vidpproc_fw/IntelCE/vidpproc_fw-13.11.10484.229643
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core ipclib
+)
+
+ExternalProject_Add(
+	vidpproc
+	URL 				${CMAKE_SOURCE_DIR}/vidpproc-None-SRC-13.11.10484.229643.tgz
+	SOURCE_DIR 			vidpproc
+	BINARY_DIR 			vidpproc/IntelCE/vidpproc-13.11.10484.229643
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS vidpproc_fw common
 )
 
 
