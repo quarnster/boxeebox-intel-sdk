@@ -295,9 +295,31 @@ ExternalProject_Add(
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
-	DEPENDS kernel
+	DEPENDS core
 )
 
+ExternalProject_Add(
+	clock_recovery
+	URL 				${CMAKE_SOURCE_DIR}/clock_recovery.tar.gz
+	SOURCE_DIR 			clock_recovery
+	BINARY_DIR 			clock_recovery/clock_recovery
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core
+)
+ExternalProject_Add(
+	demux
+	URL 				${CMAKE_SOURCE_DIR}/demux-None-SRC-13.11.10484.229643.tgz
+	SOURCE_DIR 			demux
+	BINARY_DIR 			demux/IntelCE/demux-13.11.10484.229643
+	PATCH_COMMAND		sed -i -E "1251s/discon_detection_enabled\\s/discon_detection_enabled[stream_id]/" IntelCE/demux-13.11.10484.229643/ver3/driver/ismd_demux_tags_timing.c
+		COMMAND			sed -i -e "4692s/$<SEMICOLON>/=odd_or_even$<SEMICOLON>/" IntelCE/demux-13.11.10484.229643/ver3/driver/ismd_demux_api.c
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		${SMD_MAKE}
+	DEPENDS core clock_recovery
+)
 
 #ExternalProject_Add(
 #	sec
