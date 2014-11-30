@@ -1,0 +1,720 @@
+platform
+{
+    startup
+    {
+        // Default search location for files when action == "load"
+        //
+        //      current directory:
+        //      /etc/platform_config/ directory
+        //
+        {   action      "load"
+            filename    "/etc/platform_config/ce4100/local_tweaks.hcfg"
+        }
+    }
+
+    memory
+    {
+        // Populate platform.memory.layout during bootup by performing the
+        // following steps:
+        //
+        // 1. Load primary config file (i.e., THIS FILE YOU ARE READING):
+        //
+        //    platform_config_app load /etc/platform_config/platform_config.hcfg
+        //
+        // 2. Load ZERO-BASED media memory layout description:
+        //
+        //    platform_config_app load /etc/platform_config/memory_layout_512M.hcfg platform.memory.layout
+        //
+        // 3. SHIFT All zero-based memory addresses into desired physical
+        //    location:
+        //
+        //      platform_config_app memshift platform.memory.media_base_address
+
+      //media_base_address = 0xC800000   /* 200 Megabytes */
+      media_base_address = 0x28000000   /* 640 Megabytes */
+    }
+
+    external_clock
+    {
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // THIS SECTION SHOULD BE EDITED TO CORRECT DISCREPANCIES WITH THE
+        // ACTUAL TARGET SYSTEM AND PROBABLY TO REMOVE DEFINITIONS FOR UNUSED
+        // EXERNAL CLOCKS.
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // At boot time the clock_control component will cycle through each of
+        // the external clock descriptions here and attempt to read config
+        // register 0 at the specified offset using the specified device address
+        // on the specified bus. If data is successfully returned, it will be
+        // assumed to be the external clock, and the rest of the description
+        // will be used to control access to it.  If there is a different device
+        // at the probed location, it is important to remove the clock
+        // definition from this file.
+        //
+        // An external clock source is defined with the following values:
+        //
+        // Clock chip addresses and register offsets:
+        //  i2c_bus                      I2C bus number on which device is found
+        //  device_addr                  I2C device address
+        //  config_reg0_addr             offset of configuration register 0
+        //  config_reg1_addr             offset of configuration register 1
+        //
+        // 0-based bit positions in configuration register 0:
+        //  aud_clk_freq_sel_msb_offset  msb of the 2-bit audio clk field
+        //  vdc_clk1_freq_sel_offset     vdc clk 1 bit
+        //  vdc_clk2_freq_sel_offset     vdc clk 2 bit
+        //
+        // 0-based bit positions in configuration register 1:
+        //  aud_clk0_enable_offset       aud_clk0 enable bit
+        //  aud_clk1_enable_offset       aud_clk1 enable bit
+        //  aud_clk2_enable_offset       aud_clk2 enable bit
+        //  aud_clk3_enable_offset       aud_clk3 enable bit
+        //  vdc_clk1_enable_offset       vdc_clk1 enable bit
+        //  vdc_clk2_enable_offset       vdc_clk2 enable bit
+        //  vdc_master_clk_enable_offset 27 MHz VDC master clock enable bit
+
+        IDT_6V49061
+        {
+            i2c_bus                      = 0
+            device_addr                  = 0xD4
+
+            config_reg0_addr             = 0x80
+            aud_clk_freq_sel_msb_offset  = 1
+            vdc_clk1_freq_sel_offset     = 2
+            vdc_clk2_freq_sel_offset     = 3
+
+            config_reg1_addr             = 0x81
+            aud_clk0_enable_offset       = 0
+            aud_clk1_enable_offset       = 1
+            aud_clk2_enable_offset       = 2
+            aud_clk3_enable_offset       = 7
+            vdc_master_clk_enable_offset = 3
+            vdc_clk1_enable_offset       = 6
+            vdc_clk2_enable_offset       = 5
+        }
+
+        AKM_AK8136
+        {
+            i2c_bus                      = 0
+            device_addr                  = 0xAC
+
+            config_reg0_addr             = 0xFF
+            aud_clk_freq_sel_msb_offset  = 3
+            vdc_clk1_freq_sel_offset     = 0
+            vdc_clk2_freq_sel_offset     = 1
+
+            config_reg1_addr             = 0xFE
+            aud_clk0_enable_offset       = 6
+            aud_clk1_enable_offset       = 6
+            aud_clk2_enable_offset       = 7
+            aud_clk3_enable_offset       = 7
+            vdc_master_clk_enable_offset = 3
+            vdc_clk1_enable_offset       = 4
+            vdc_clk2_enable_offset       = 5
+        }
+    }
+
+    power
+    {
+        // Supported operational power modes.
+        // Each mode lists the target state of each device.
+        // Legal state values:
+        //      D0 => power on
+        //      D3 => power off
+        //      D1, D2 currently treated as synonyms for D3
+        //
+        // DEVICE ORDER WITHIN A MODE MATTERS!
+        //  During a mode change:
+        //  - First, devices that are being disabled will be processed, from
+        //    first to last.
+        //  - Then devices that are being enabled will be processed, from
+        //    last to first.
+
+        operational_modes
+        {
+            ON
+            {
+                viddec   D0
+                vidpproc D0
+                graphics D0
+                audio    D0
+                display  D0
+            }
+
+            STANDBY
+            {
+                viddec   D3
+                vidpproc D3
+                graphics D3
+                audio    D3
+                display  D3
+            }
+        }
+    }
+
+    software
+    {
+        drivers
+        {
+            avcap
+            {
+                // This section describes edid replacements for AVCAP Silicon
+                // Image driver. Certain sections of EDID will be replaced with
+                // values specified below.
+
+                edid
+                {
+                    manufacturer_id = "ZZZ"           // 3 character UPnP value
+                    product_id      = 0x0052          // 2 byte ID
+                    serial          = 0x00000000      // 4 byte serial number
+                    week            = 01              // Week of Manufacture
+                    year            = 2010            // Year of Manufacture
+                    monitor_name    = "MyName       " // Monitor name up to 13 characters
+                    monitor_serial  = "123456789    " // Monitor serial# up to 13 characters
+                    dc_36bit        = 0               // Deep Color 36 bit support. 1 = True
+                    dc_30bit        = 0               // Deep Color 30 bit support. 1 = True
+                    native_refresh_rate = 60          // This value indicates the refresh rate
+                                                      // to use if the TV doesn't indicate a
+                                                      // supported video resolution refresh rate
+                                                      // that is a recognized rate of 50Hz or
+                                                      // 60Hz.
+                                                      // Valid values: 50 or 60.
+                    current_mode_set_to_priority = 0  // Requests that the current mode be set
+                                                      // as the preferred mode in the upstream
+                                                      // EDID. 1=Use current mode 0=Don't use
+                                                      // current mode.
+
+                    // Priority/filter list indicates how to sort the video modes. Modes listed
+                    // first in the list indicate highest priority. This list also serves as a filter.
+                    // If the mode is not listed, the mode is not used in the upstream EDID.
+                    // The modes are taken from CEA-861 Table 4 "Video Formats - Video ID Code
+                    // and Aspect Ratios". The values "aa" to "cz" are recongnized indexes.
+                    50_hz_priority_list
+                    {
+                        aa = 31 // 1920x1080p     50Hz 16x9
+                        ab = 20 // 1920x1080i     50Hz 16x9
+                        ac = 19 // 1280x720p      50Hz 16x9
+                        ad = 18 // 720x576p       50Hz 16x9
+                        ae = 17 // 720x576p       50Hz 4x3
+                        af = 33 // 1920x1080p     25Hz 16x9
+                        ag = 32 // 1920x1080p     24Hz 16x9
+                        ah = 22 // 720(1440)x576i 50Hz 16x9
+                        ai = 21 // 720(1440)x576i 50Hz 4x3
+
+                        aj = 16 // 1920x1080p     60Hz 16x9
+                        ak =  5 // 1920x1080i     60Hz 16x9
+                        al =  4 // 1280x720p      60Hz 16x9
+                        am =  3 // 720x480p       60Hz 16x9
+                        an =  2 // 720x480p       60Hz 4x3
+                        ao = 34 // 1920x1080p     30Hz 16x9
+                        ap =  7 // 720(1440)x480i 60Hz 16x9
+                        aq =  6 // 720(1440)x480i 60Hz 4x3
+
+                        ar =  1 // 640x480p       60Hz 4x3
+                    }
+
+                    60_hz_priority_list
+                    {
+                        aa = 16 // 1920x1080p     60Hz 16x9
+                        ab =  5 // 1920x1080i     60Hz 16x9
+                        ac =  4 // 1280x720p      60Hz 16x9
+                        ad =  3 // 720x480p       60Hz 16x9
+                        ae =  2 // 720x480p       60Hz 4x3
+                        af = 34 // 1920x1080p     30Hz 16x9
+                        ag = 32 // 1920x1080p     24Hz 16x9
+                        ah =  7 // 720(1440)x480i 60Hz 16x9
+                        ai =  6 // 720(1440)x480i 60Hz 4x3
+
+                        aj = 31 // 1920x1080p     50Hz 16x9
+                        ak = 20 // 1920x1080i     50Hz 16x9
+                        al = 19 // 1280x720p      50Hz 16x9
+                        am = 18 // 720x576p       50Hz 16x9
+                        an = 17 // 720x576p       50Hz 4x3
+                        ao = 33 // 1920x1080p     25Hz 16x9
+                        ap = 22 // 720(1440)x576i 50Hz 16x9
+                        aq = 21 // 720(1440)x576i 50Hz 4x3
+
+                        ar =  1 // 640x480p       60Hz 4x3
+                    }
+
+                    // This list of modes will be added to the upstream EIDD
+                    // regardless of TV support. Ensure that the modes in this
+                    // list are included in their respective priority/filter
+                    // lists above or else they will be filtered out.
+                    // This list uses the same video resolution list as the
+                    // priority/filter lists above.
+                    50_hz_addition_list
+                    {
+                        aa = 20 // 1920x1080i     50Hz 16x9
+                        ab = 19 // 1280x720p      50Hz 16x9
+                        ac = 18 // 720x576p       50Hz 16x9
+                        ad = 21 // 720(1440)x576i 50Hz 4x3
+                    }
+
+                    60_hz_addition_list
+                    {
+                        aa =  5 // 1920x1080i     60Hz 16x9
+                        ab =  4 // 1280x720p      60Hz 16x9
+                        ac =  3 // 720x480p       60Hz 16x9
+                        ad =  6 // 720(1440)x480i 60Hz 4x3
+                    }
+
+                    audio
+                    {
+                        // Audio pass through will take all audio modes supported
+                        // downstream and add them (unmodified) to the upstream
+                        // EDID. If there are conflicting audio modes (ie PCM mode
+                        // is specified with only 16 bit below, but the downstream
+                        // EDID supports PCM with 24, 20, & 16 bit) then the
+                        // specified mode below will be used and the downstream
+                        // mode will be ignored.   0 = False   1 = True
+                        pass_through = 0
+
+                        // Each of the audio entries describe the supported audio modes
+                        // for the platform. The format used for the entries is the
+                        // "Short Audio Descriptors" as described in the EDID extension block
+                        // of CEA-861.
+                        //      Byte 1 describes the format and max number of channels-1.
+                        //      Byte 2 describes the supported audio frequencies.
+                        //      Byte 3 is format specific.
+                        // The entry format uses Byte 3 as the  MSB and Byte 1 as
+                        // the LSB. entry_a = 0x332211
+                        // Example: PCM 4-channel 48kHz 44.1kHz 16bit
+                        //    entry_a = 0x01060B
+
+                        entry_a = 0x050709 // PCM 2-ch 48kHz 44.1kHz 32kHz 24bit 16bit
+                        entry_b = 0x500715 // AC-3 6-ch 48kHz 44.1kHz 32kHz 640kbps
+                        //entry_c = 0x057F0F // PCM 8-ch 192kHz 176.4kHz 96kHz 88.2kHz
+                                             //          48kHz 44.1kHz 32kHz 24bit 16bit
+                    }
+
+                    // The speaker entry specifies the speaker configuration
+                    // for the platform.  The 3 byte speaker entry is taken
+                    // from the EDID extension block described in the CEA-861 standard.
+                    //      Byte 1's 8 bits are used.
+                    //      Byte 2's 3 least significant bits are used.
+                    //      Byte 3 is required to be zero.
+                    // Example:
+                    //      speaker_entry = 0x0005 // Front Left & Right, Front Center
+                    speaker_entry = 0x0001 // Front Left & Right
+
+                }
+
+                // This section describes infoframe notification configuration of
+                // AVCAP Silicon Image driver. When enabled packets of specified
+                // type will be submitted to capture driver which in its turn will
+                // notify a rendering application via an event. The rate of notification
+                // is once per second for every packet type. Notifications are sent only
+                // when capture is enabled. Notifications about up to 4 different
+                // infoframes is supported at the same time.
+
+                // Make sure EDID reflects proper capabilities in order to let source
+                // know that packets of certain types are accepted and understood.
+
+                // Exception: for ACP infoframe, if the notification is specified, it 
+                // will be forwarded once per 300ms when there is ACP sent from the 
+                // upstream device. When there is no ACP from the upstream, the driver
+                // will send ACP packet with Generic Audio type per 600ms.
+
+                infoframe_notification
+                {
+                    spd   = 0
+                    acp   = 0
+                    isrc1 = 0
+                    isrc2 = 0
+                    mpeg  = 0
+                    vs    = 0
+                }
+
+                // This section describes colorspace conversion policy
+                // Default behavior is to downscale input of any depth to
+                // 24 bits and convert input of any pixel format to YUV422.
+                // Pixel format conversion can be bypassed if necessary.
+                // Depth downscaling bypass is not supported at the moment.
+
+                csc
+                {
+                    color_bypass = 0 // Controls YUV422 conversion bypass
+                }
+
+                // This section describes various HDCP related tweaks
+
+                hdcp
+                {
+                    // Controls AV mute bypass due to bad HDCP conditions downstream
+                    mute_bypass = 0
+
+                    // By default, with presence of downstream devices, SiI9135 reports itself as a repeater
+                    // This option overrides that and makes SiI9135 to pretend of being non-repeater.
+                    // !!! WARNING !!!
+                    //   Pretending of being non-repeater inconsistent with HDCP specification
+                    // !!! WARNING !!!
+                    repeater_bypass = 0
+
+                    // Per HDCP spec, SiI9135 initiates downstream re-authentication each time there is 
+                    // upstream authentication. Enabling this option eliminates downstream re-authentication
+                    // if upstream authentication was not caused by downstream pulse
+                    repeater_cache = 0
+
+                    // Controls optional disabling of HDCP port upon video loss and subsequent reenabling
+                    // upon video detect
+                    port_always_on = 1
+
+                    // Controls amount of time [in ms] from downstream hot plug detection that SiI9135 waits for
+                    // upstream authentication request before enabling downstream authentication anyway.
+                    // Supported range is 3000...7000. Value out of range is overriden to the default of 5500.
+                    auto_enable_timeout = 5500 
+
+                    // Controls amount of time [in ms] where several back to back authentications separated
+                    // by amount less than this argument specifies result in generation of hot plug pulse
+                    // Supported range is 0...7000. Setting it to 0 disables the feature completely.
+                    multi_auth_track = 0 
+                }
+
+                i2c
+                {
+                    // Indicates the bus that the HDMI RX chip resides on.
+                    hdmi_rx_bus = 1
+                }
+
+                video
+                {
+                    // Silocon Image unit does distinguish between 1/1.000 and
+                    // 1/1.001 modes. The following switch enables 1/1.001 modes
+                    // detection based on input audio transmission rate
+                    detect_1_over_1_001 = 1
+                }
+
+            }
+
+            osal
+            {
+            }
+
+            pal
+            {
+            }
+
+            sven // sven kernel driver configuration parameters //
+            {
+                // SVEN Event Transmission "Hot Disable" Mask
+                //
+                // DISABLE_ANY     (1<<0) - All writers should check for this
+                // DISABLE_STRINGS (1<<1) - String Writers should check for this
+                // DISABLE_REGIO   (1<<2) - Register IO functions check
+                // DISABLE_FUNCTION(1<<3) - Function Entered/Exited/AutoTrace
+                // DISABLE_SMD     (1<<7) - Streaming Media Driver Activity
+                // DISABLE_MODULE  (1<<8) - Module Specific Events
+                //
+                // Default value: 0xffffffff - All event transmission disabled
+                //
+                // To turn all events on at any time run:
+                //          csven hot enable all
+
+                dismask = 0xffffffff
+
+                // SVEN Kernel Driver Debug Level:
+
+                debug_level = 0
+
+                // # of individual buffers to split the shared memory area into.
+                // Default Value:  2 (two buffers)
+
+                num_bufs = 2
+            }
+
+            smd
+            {
+                audio
+                {
+                    debug_level = 5
+                    debug_method = 0 //0=sven 1=os_print 2=disabled
+
+                    // While in timed mode at rates greater than
+                    // 1x, up to 2x, enable fast audio playback.
+
+                    enable_timed_trick_modes = 1
+
+                    truehd_inport_port_depth = 100
+                    
+                    //Assign an audio DSP to do specific type of processing. 
+		            //(Decoding or Post Processing(mix, sample rate convert, etc.))
+		            dsp_post_processing = 0; 	//DSP small cache=0, DSP large cache=1
+                    dsp_decode = 1; 		    //DSP small cache=0, DSP large cache=1
+
+                    render
+                    {
+                        //Invert i2s0 bit clock 1=inverted 0=normal
+                        invert_i2s0_bit_clk = 1;
+
+                        //Invert i2s1 bit clock 1=inverted 0=normal
+                        invert_i2s1_bit_clk = 1;
+                    }
+                    
+                    capture
+                    {
+                        //bitclock direction for i2s input 1=internal (ADC route) 0=external (SI9135 route)
+                        bitclk_direction = 0;
+
+                        //i2s format 0=standard (SI9135 configured for this)1=MSB right justified
+                        msb_justified = 0;
+                    }
+                }
+                core
+                {
+                    allow_memory_overlap = 1
+                    frame_buffer_properties
+                    {
+                        stride = 2048
+                        region_height = 4352
+                        tile_height = 64
+                        tile_width = 128 
+                    }
+                }
+                clock
+                {
+                    clock_properties
+                    {
+                        master_clock_source = 0 // VCXO = 0, MASTER_DDS = 1
+
+                        // vcxo_upper_limit and vcxo_lower_limit are VCXO
+                        // part-specific parameters. The default values are
+                        // characterized for the VCXO part available on Intel
+                        // CE boards.  VCXO center frequency will be the center
+                        // of the VCXO tunable range.
+
+                        // Upper tunable limit of VCXO in Hz
+                        vcxo_upper_limit = 27002000
+
+                        // Lower tunable limit of VCXO in Hz
+                        vcxo_lower_limit = 26998000
+                    }
+                }
+                demux
+                {
+                    // Level of messages to print from the demux driver
+                    //  0 = fatal errors
+                    //  1 = all possible errors and warnings
+                    //  2 = errors, warnings, most debug messages
+                    //  3+ = everything and the kitchen sink
+
+                    debug_level = 0
+
+                    // Level of messages for sven logging
+                    //   0 - silent
+                    //   1 - system debug - input/output port monitoring
+                    //   2 - decode metrics - decode time etc.
+                    //   3 - stream messages - fw message monitoring
+                    //   4 - all messages
+                    //   5 - all messages
+
+                    sven_level = 5
+                }
+                viddec
+                {
+                    // Level of messages to print from the vidrend driver
+                    //   0 - silent
+                    //   1 - errors only
+                    //   2 - warnings
+                    //   3 - major events
+
+                    debug_level = 1
+
+                    // Level of messages for sven logging
+                    //   0 - silent
+                    //   1 - system debug - input/output port monitoring
+                    //   2 - decode metrics - decode time etc.
+                    //   3 - stream messages - fw message monitoring
+                    //   4 - all messages
+                    //   5 - all messages
+
+                    sven_level = 5
+
+                    // Maximum number of frames that can be reversed for H264
+                    // contents during smooth reverse. This can be changed
+                    // based on the memory layout.
+
+                    max_frames_to_reverse_in_H264 = 10
+                }
+                vidpproc
+                {
+                    // debug flag determines what is sent to the serial port
+                    // and supports the following options:
+                    //  0 - silent
+                    //  1 - errors only
+                    //  2 - warnings/major events
+                    //  3 - all messages
+
+                    debug_level = 1
+                }
+                vidrend
+                {
+                    // Level of messages to print from the vidrend driver
+                    //  0 - silent
+                    //  1 - errors only
+                    //  2 - warnings
+                    //  3 - major events
+
+                    debug_level = 1
+
+                    // Level of messages for sven logging
+
+                    sven_level = 5
+
+                    // Frames sent to display at half rate
+                    //  0 - false or half rate disabled
+                    //  1 (non-zero) - true or half rate enabled
+
+                    half_rate_enable = 0
+
+                    // Send first frame to display as soon as it is received
+                    //  0 - false or display first frame based on pts
+                    //  1 (non-zero) - true or first frame displayed as soon as
+                    //                  received
+
+                    display_first_frame_fast = 0
+                }
+                bufmon
+                {
+                    // debug level determines what is sent to the serial port
+                    // and supports the following options:
+                    //  0 - silent
+                    //  1 - errors only
+                    //  2 - errors and warnings
+                    //  3 - errors, warnings, major events
+                    //  4 - everything
+                    //
+                    // If not specified, it will default to errors only.
+
+                    debug_level = 1
+                }
+                tsout
+                {
+                    // Debug level determines what is sent to the serial port
+                    // and supports the following options:
+                    //  0 - silent
+                    //  1 - errors only
+                    //  2 - errors and warnings
+                    //  3 - errors, warnings, major events
+                    //  4 - errors, warnings, major events, Memory
+                    //  5+ - Verbose levels
+                    //
+                    // If not specified, it will default to errors only.
+
+                    debug_level = 2
+
+                    // Level of messages for sven logging
+
+                    sven_level  = 3
+
+                    //  Signal configuration for the TSOut signals
+
+                    // CE TX Interface Packet SYNC (1394_OSYNC) mode :
+                    //  0: Pulse marking the first bit of the first byte of the
+                    //      DIF packer;
+                    //  1: Pulse marking the first byte of the DIF packer;
+                    //  2: level covering the entire DIF packet from the first
+                    //    bit of the first byte to the last bit of the last byte
+
+                    sync_len = 0
+
+                    // CE TX Interface Data Valid output (1394_ODAV) polarity:
+                    //  0: active high
+                    //  1: active low
+
+                    odav_pol = 0
+
+                    // CE TX Interface Packet Enable/Error output (1394_OENABLE)
+                    // polarity:
+                    //  0: active high
+                    //  1: active low
+
+                    oenable_pol = 0
+
+                    // CE TX Interface Packet SYNC output (1394_OSYNC) polarity.
+                    //  0: active high
+                    //  1: active low
+
+                    osync_pol = 0
+
+                    // CE TX Interface Clock sampling edge:
+                    //  0: rising edge
+                    //  1: falling edge
+
+                    oclk_edge = 1
+
+                    // Clock Frequency
+                    //  0: 27 MHz
+                    //  1: 54 MHz
+                    //  2: 74.25 MHz
+
+                    oclk_freq = 1
+                }
+            }
+        }
+
+        // Predefined threads and thread groups in the Intel CE stack.
+        //
+        // This configuration node lists the names of the defined threads,
+        // and the priorities with which they will be created.
+        //
+        // In the current implementation the legal priorities are:
+        //
+        // [1,99]   Any priority in this range causes the thread to be created
+        //          with the Linux "realtime" scheduling policy and the
+        //          specified priority, where 99 is the highest priority.
+        //
+        // 0        The lowest priority.  A thread with priority 0 will be
+        //          created with the Linux "non-realtime" scheduling policy.
+        //
+        // The primary reasons for the existence of this node are to allow
+        // developers of the stack to easily tune thread priorities and to ease
+        // porting to new kernels or OS's.
+        //
+        // End users:
+        // - should not add to this list.  Adding a thread name without
+        //   corresponding changes in the stack source has no effect.
+        // - may change the absolute priorities (in order to accommodate
+        //   application threads) but should not change the relative order of
+        //   the priorities of these threads.  Changing the relative priorities
+        //   or creating realtime application threads with competing priorities
+        //   could require re-evaluation of the system.
+        threads
+        {
+            DisplayInterrupt   { priority = 99 }
+            VidPProc_IO        { priority = 90 }
+            VidDec_hal_Poll    { priority = 90 }
+            Audio_Output       { priority = 80 }
+            Audio_Pipe_Mgr     { priority = 80 }
+            Audio_Timing       { priority = 80 }
+            Audio_Recovery     { priority = 80 }
+            DisplayVBD         { priority = 80 }
+            DisplayGDL         { priority = 70 }
+            VidDec_hal_Wkld    { priority = 70 }
+            VidRend_IO         { priority = 70 }
+            VidRend_Output     { priority = 70 }
+            DisplayWBPproduce  { priority = 70 }
+            DisplayWBPconsume  { priority = 70 }
+            DisplayVBI         { priority = 70 }
+            VidDec_Output      { priority = 60 }
+            AVCap_Input        { priority = 60 }
+            DisplayHDMI        { priority = 50 }
+            Audio_Input        { priority = 50 }
+            VidDec_Input       { priority = 40 }
+            Alsa_Shim          { priority = 30 }
+            Demux_Input        { priority = 20 }
+            Demux_Output       { priority = 20 }
+            TSOut              { priority = 20 }
+            AVCap_RX           { priority = 10 }
+            VidDec_User        { priority = 10 }
+            LibgdlEventNotify  { priority =  0 }
+            BufMon_Thread      { priority =  0 }
+            EGLWindowSwap      { priority =  0 }
+            DirectFB_Critical  { priority =  0 }
+            DirectFB_Messaging { priority =  0 }
+            DirectFB_Output    { priority =  0 }
+            DirectFB_Input     { priority =  0 }
+            DirectFB_Cleanup   { priority =  0 }
+            DirectFB_Default   { priority =  0 }
+        }
+    }
+}
