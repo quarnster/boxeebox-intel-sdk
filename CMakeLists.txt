@@ -56,6 +56,7 @@ add_custom_target(
 	audio_fw
 	COMMAND ${GO} run ./extract_audio_fw.go
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	DEPENDS ${CMAKE_SOURCE_DIR}/extract_audio_fw.go
 )
 
 ExternalProject_Add(
@@ -320,6 +321,29 @@ ExternalProject_Add(
 )
 
 ExternalProject_Add(
+	alsa_shim
+	URL 				${CMAKE_SOURCE_DIR}/alsa_shim-None-SRC-13.11.10504.232647.tgz
+	SOURCE_DIR 			alsa_shim
+	BINARY_DIR 			alsa_shim/IntelCE/alsa_shim-13.11.10504.232647
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		KERNEL_BUILD_DIR=${BUILD_DEST}/kernel/linux-2.6.28 ${SMD_MAKE}
+	DEPENDS audio
+)
+
+ExternalProject_Add(
+	edl
+	URL 				${CMAKE_SOURCE_DIR}/edl-SRC-13.11.10504.232647.tgz
+	SOURCE_DIR 			edl
+	BINARY_DIR 			edl/IntelCE/edl-13.11.10504.232647
+	CONFIGURE_COMMAND 	""
+	INSTALL_COMMAND		""
+	BUILD_COMMAND		PATH=$ENV{PATH}:${BUILD_DEST}/bin  ${SMD_MAKE}
+	DEPENDS audio
+)
+
+
+ExternalProject_Add(
 	clock_recovery
 	URL 				${CMAKE_SOURCE_DIR}/clock_recovery-None-SRC-13.11.10484.229643.tgz
 	SOURCE_DIR 			clock_recovery
@@ -479,7 +503,7 @@ ExternalProject_Add(
 		COMMAND			sed -i -E "s,SUPPORT_DRI_DRM = 1,SUPPORT_DRI_DRM = 0," eurasia_km/eurasiacon/build/linux/sgx_intel_ce/makefile.shared_conf
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
-	BUILD_COMMAND		INTEL_D3_CHANGES=1 INTEL_D3_PM=1 INSTALL_FSROOT=${BUILD_DEST} SUPPORT_SGX=1 DISP_ROOT=${CMAKE_BINARY_DIR}/display/IntelCE/display-13.11.10504.232647 GFX_ROOT=${CMAKE_BINARY_DIR}/display/IntelCE/display-13.11.10504.232647 ${SMD_MAKE}
+	BUILD_COMMAND		INTEL_D3_CHANGES=1 INTEL_D3_PAD=1 INTEL_D3_NO_PCI_ENUM=1 INTEL_D3_DISABLE_TEXTURE_STREAM=1 INTEL_D3_P_CHANGES=1 INTEL_D3_CACHED_CBUF=1 INTEL_D3_FLUSH=1 INTEL_D3_PM=1 INSTALL_FSROOT=${BUILD_DEST} SUPPORT_SGX=1 DISP_ROOT=${CMAKE_BINARY_DIR}/display/IntelCE/display-13.11.10504.232647 GFX_ROOT=${CMAKE_BINARY_DIR}/display/IntelCE/display-13.11.10504.232647 ${SMD_MAKE}
 	DEPENDS kernel osal idl intel_ce_pm
 )
 

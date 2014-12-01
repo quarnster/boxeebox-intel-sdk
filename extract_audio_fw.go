@@ -103,10 +103,10 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	conv(f, output_c0, "audio_dsp_fw_kernel_dsp0")
+	conv(f, output_c0, "audio_fw_kernel_dsp0")
 	_, err = f.Seek(rodata_offset+dsp1_off, 0)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	conv(f, output_c1, "audio_dsp_fw_kernel_dsp1")
+	conv(f, output_c1, "audio_fw_kernel_dsp1")
 }
