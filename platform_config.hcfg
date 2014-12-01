@@ -78,7 +78,7 @@ platform
             device_addr                  = 0xD4
 
             config_reg0_addr             = 0x80
-            aud_clk_freq_sel_msb_offset  = 1
+            aud_clk_freq_sel_offset      = 1
             vdc_clk1_freq_sel_offset     = 2
             vdc_clk2_freq_sel_offset     = 3
 
@@ -98,6 +98,7 @@ platform
             device_addr                  = 0xAC
 
             config_reg0_addr             = 0xFF
+            aud_clk_freq_sel_offset      = 3
             aud_clk_freq_sel_msb_offset  = 3
             vdc_clk1_freq_sel_offset     = 0
             vdc_clk2_freq_sel_offset     = 1
@@ -110,6 +111,10 @@ platform
             vdc_master_clk_enable_offset = 3
             vdc_clk1_enable_offset       = 4
             vdc_clk2_enable_offset       = 5
+
+            aud_clk_freq_sel_width       = 1 // Unused?
+            vdc_clk1_freq_sel_width      = 1 // Unused?
+            vdc_clk2_freq_sel_width      = 1 // Unused?
         }
     }
 
@@ -310,8 +315,8 @@ platform
                 // Make sure EDID reflects proper capabilities in order to let source
                 // know that packets of certain types are accepted and understood.
 
-                // Exception: for ACP infoframe, if the notification is specified, it 
-                // will be forwarded once per 300ms when there is ACP sent from the 
+                // Exception: for ACP infoframe, if the notification is specified, it
+                // will be forwarded once per 300ms when there is ACP sent from the
                 // upstream device. When there is no ACP from the upstream, the driver
                 // will send ACP packet with Generic Audio type per 600ms.
 
@@ -350,7 +355,7 @@ platform
                     // !!! WARNING !!!
                     repeater_bypass = 0
 
-                    // Per HDCP spec, SiI9135 initiates downstream re-authentication each time there is 
+                    // Per HDCP spec, SiI9135 initiates downstream re-authentication each time there is
                     // upstream authentication. Enabling this option eliminates downstream re-authentication
                     // if upstream authentication was not caused by downstream pulse
                     repeater_cache = 0
@@ -362,12 +367,12 @@ platform
                     // Controls amount of time [in ms] from downstream hot plug detection that SiI9135 waits for
                     // upstream authentication request before enabling downstream authentication anyway.
                     // Supported range is 3000...7000. Value out of range is overriden to the default of 5500.
-                    auto_enable_timeout = 5500 
+                    auto_enable_timeout = 5500
 
                     // Controls amount of time [in ms] where several back to back authentications separated
                     // by amount less than this argument specifies result in generation of hot plug pulse
                     // Supported range is 0...7000. Setting it to 0 disables the feature completely.
-                    multi_auth_track = 0 
+                    multi_auth_track = 0
                 }
 
                 i2c
@@ -435,8 +440,8 @@ platform
                     enable_timed_trick_modes = 1
 
                     truehd_inport_port_depth = 100
-                    
-                    //Assign an audio DSP to do specific type of processing. 
+
+                    //Assign an audio DSP to do specific type of processing.
 		            //(Decoding or Post Processing(mix, sample rate convert, etc.))
 		            dsp_post_processing = 0; 	//DSP small cache=0, DSP large cache=1
                     dsp_decode = 1; 		    //DSP small cache=0, DSP large cache=1
@@ -449,7 +454,7 @@ platform
                         //Invert i2s1 bit clock 1=inverted 0=normal
                         invert_i2s1_bit_clk = 1;
                     }
-                    
+
                     capture
                     {
                         //bitclock direction for i2s input 1=internal (ADC route) 0=external (SI9135 route)
@@ -467,7 +472,7 @@ platform
                         stride = 2048
                         region_height = 4352
                         tile_height = 64
-                        tile_width = 128 
+                        tile_width = 128
                     }
                 }
                 clock
