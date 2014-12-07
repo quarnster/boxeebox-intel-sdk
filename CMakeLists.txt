@@ -5,8 +5,16 @@ find_program(GO go)
 if(${GO-NOTFOUND})
 	message(FATAL_ERROR "Go not found")
 endif()
-set(SYSROOT /Volumes/Skivavbild/boxeebox-xbmc/tools/boxeebox/sysroot)
-set(BUILD_DEST ${CMAKE_BINARY_DIR}/target)
+
+get_filename_component(SYSROOT "${CMAKE_SOURCE_DIR}/sysroot" REALPATH)
+set(PARALLEL "-j8" CACHE STRING "Arguments for make for parallel builds")
+
+set(TARGET "i686-cm-linux")
+set(TARGET_DIR "${SYSROOT}/usr")
+
+set(ENABLE_GDB OFF CACHE BOOL "Wether to build gdb or not")
+
+set(BUILD_DEST ${SYSROOT})
 set(ENV{BUILD_DEST} ${BUILD_DEST})
 set(ENV{KERNEL_VER} linux-2.6.28)
 set(ENV{CROSS_COMPILE} ${BUILD_DEST}/bin/i686-cm-linux-)
@@ -16,18 +24,6 @@ set(ENV{FSROOT} ${BUILD_DEST})
 #message("export KERNEL_VER=$ENV{KERNEL_VER}")
 #message("export BUILD_DEST=$ENV{BUILD_DEST}")
 #message("export ARCH=$ENV{ARCH}")
-
-if(${VERBOSE})
-	set(ENV{LOUD} 1)
-endif()
-
-
-
-add_custom_command(
-	OUTPUT ${BUILD_DEST}/bin
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${BUILD_DEST}/bin
-)
-
 set(TARGETCMDS "FSROOT=$ENV{FSROOT}")
 set(CMDS addr2line ar as c++ cpp g++ gcc gccbug gcov gprof ld nm objcopy objdump ranlib readelf size strings strip)
 foreach(CMD ${CMDS})
@@ -36,20 +32,144 @@ foreach(CMD ${CMDS})
 	set(ENV{${t}}  $ENV{CROSS_COMPILE}${CMD})
 	set(TARGETCMDS ${TARGETCMDS} "${t}=$ENV{${t}}")
 	#message("export ${t}=$ENV{${t}}")
-	add_custom_target(
-		${CMD}
-		COMMAND ${CMAKE_COMMAND} -E create_symlink ${SYSROOT}/usr/bin/i686-pc-linux-gnu-${CMD} $ENV{${t}}
-		DEPENDS ${BUILD_DEST}/bin
-	)
+	# add_custom_target(
+	# 	${CMD}
+	# 	COMMAND ${CMAKE_COMMAND} -E create_symlink ${SYSROOT}/usr/bin/i686-pc-linux-gnu-${CMD} $ENV{${t}}
+	# 	DEPENDS ${BUILD_DEST}/bin
+	# )
 endforeach()
 set(ENV{TARGETCC} ${BUILD_DEST}/bin/i686-cm-linux-gcc)
 set(TARGETCMDS ${TARGETCMDS} TARGETCC=$ENV{TARGETCC})
 set(SMD_MAKE ARCH=$ENV{ARCH} CROSS_COMPILE=$ENV{CROSS_COMPILE} ${TARGETCMDS} BUILD_DEST=$ENV{BUILD_DEST} KERNEL_VER=$ENV{KERNEL_VER} make all)
+
+
+
+if(${VERBOSE})
+	set(ENV{LOUD} 1)
+endif()
+
+include(ExternalProject)
+
+execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE HOSTMACHINE)
+string(REPLACE "\n" "" HOSTMACHINE ${HOSTMACHINE})
+
+ExternalProject_Add(
+	kernel-boot
+	URL					${CMAKE_SOURCE_DIR}/kernel-None-SRC-13.11.10484.229643.tgz
+	SOURCE_DIR			kernel-boot
+	BINARY_DIR			kernel-boot/IntelCE/kernel-13.11.10484.229643
+	PATCH_COMMAND		${CMAKE_COMMAND} -E chdir IntelCE/kernel-13.11.10484.229643/ ${CMAKE_COMMAND} -E tar xfz linux-2.6.28-src.tar.gz
+	CONFIGURE_COMMAND	""
+	BUILD_COMMAND		make ARCH=i386 CROSS_COMPILE=i686-linux-elf- -C linux-2.6.28 gen3_defconfig
+		COMMAND 		make ARCH=i386 CROSS_COMPILE=i686-linux-elf- -C linux-2.6.28 include/linux/version.h
+	INSTALL_COMMAND		${CMAKE_COMMAND} -E copy_directory linux-2.6.28/include/linux ${TARGET_DIR}/include/linux
+		COMMAND			${CMAKE_COMMAND} -E copy_directory linux-2.6.28/arch/x86/include/asm ${TARGET_DIR}/include/asm
+		COMMAND			${CMAKE_COMMAND} -E copy_directory linux-2.6.28/include/asm-generic ${TARGET_DIR}/include/asm-generic
+)
+
+ExternalProject_Add(
+	boot-binutils
+	PREFIX 				${CMAKE_BINARY_DIR}/binutils
+	URL 				http://ftp.gnu.org/gnu/binutils/binutils-2.24.tar.bz2
+	URL_MD5 			e0f71a7b2ddab0f8612336ac81d9636b
+	CONFIGURE_COMMAND	 <SOURCE_DIR>/configure --with-sysroot=${SYSROOT} --with-lib-path=${TARGET_DIR}/lib --prefix=${TARGET_DIR} --target ${TARGET} --disable-nls --disable-werror --program-prefix=${TARGET}-
+	BUILD_COMMAND		make ${PARALLEL}
+	DEPENDS 			kernel-boot
+)
+
+ExternalProject_Add(
+	boot-gcc
+	PREFIX 				${CMAKE_BINARY_DIR}/gcc
+	URL 				ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/releases/gcc-4.9.2/gcc-4.9.2.tar.bz2
+	URL_MD5 			4df8ee253b7f3863ad0b86359cd39c43
+	CONFIGURE_COMMAND	<SOURCE_DIR>/configure --with-sysroot=${SYSROOT} --target=${TARGET} --prefix=${TARGET_DIR} --disable-nls --without-headers --with-newlib --enable-languages=c --disable-decimal-float --disable-shared --disable-threads --disable-libmudflap --disable-libssp --disable-libgomp --with-local-prefix=${TARGET_DIR} --with-native-system-header-dir=${TARGET_DIR}/include  --disable-libstdcxx --disable-libquadmath --disable-libatomic #--enable-bootstrap --disable-libquadmath  --disable-libatomic
+	BUILD_COMMAND		make ${PARALLEL}
+	INSTALL_COMMAND		make install
+#		COMMAND ${CMAKE_COMMAND} -E create_symlink ${TARGET_DIR}/lib/gcc/${TARGET}/4.9.2/libgcc.a  ${TARGET_DIR}/lib/gcc/${TARGET}/4.9.2/libgcc_eh.a
+	DEPENDS 			boot-binutils
+)
+
+ExternalProject_Add(
+	glibc
+	# glibc 2.20 can't be built for linux 2.6.28
+	URL 				http://ftp.gnu.org/gnu/glibc/glibc-2.19.tar.bz2
+	URL_MD5 			3ca28f5099257aade61b1adedb7e3401
+	# PATCH_COMMAND		cat elf/Makefile | sed s,\ readelf\ ,\ ${PREFIX}/bin/${TARGET}-readelf\ ,g > elf/Makefile.new
+	# 	COMMAND 		${CMAKE_COMMAND} -E copy elf/Makefile.new elf/Makefile
+	# 	COMMAND 		cat configure | sed s,\ readelf\ ,\ ${TARGET_DIR}/bin/${TARGET}-readelf\ ,g > configure.new
+	# 	COMMAND 		${CMAKE_COMMAND} -E copy configure.new configure
+	# 	COMMAND 		chmod +x configure
+	BUILD_COMMAND		export BUILD_CFLAGS=-I/usr/local/Cellar/gettext/0.19.3/include/ && export BUILD_LDFLAGS=-L/usr/local/Cellar/gettext/0.19.3/lib/\ -lintl && make ${PARALLEL}
+	CONFIGURE_COMMAND	CC=$ENV{TARGETCC} <SOURCE_DIR>/configure --build=${HOSTMACHINE} --target=${TARGET} --host=${TARGET} --disable-nls --enable-kernel=2.6.28 --prefix=/usr --with-headers=${TARGET_DIR}/include ac_cv_prog_BUILD_CC=/usr/local/bin/gcc-4.9 libc_cv_ssp=no libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes libc_cv_ctors_header=yes --program-prefix=${TARGET}-
+	INSTALL_COMMAND		make ${PARALLEL} install_root=${SYSROOT} install
+	DEPENDS boot-gcc
+)
+
+ExternalProject_Add(
+	gcc2
+	PREFIX 				${CMAKE_BINARY_DIR}/gcc
+	URL 				ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/releases/gcc-4.9.2/gcc-4.9.2.tar.bz2
+	URL_MD5 			4df8ee253b7f3863ad0b86359cd39c43
+	CONFIGURE_COMMAND	ac_cv_header_sys_filio_h=no <SOURCE_DIR>/configure --with-sysroot=${SYSROOT} --target=${TARGET} --prefix=${TARGET_DIR} --disable-libstdcxx-pch --enable-clocale=gnu --enable-shared --enable-threads --enable-languages=c,c++ --disable-nls --disable-multilib --disable-libgomp --disable-libmudflap --disable-libssp --disable-bootstrap --with-local-prefix=${TARGET_DIR} --with-native-system-header-dir=/usr/include --program-prefix=${TARGET}-
+	BUILD_COMMAND 		ac_cv_header_sys_filio_h=no make ${PARALLEL}
+	DEPENDS 			glibc
+)
+
+if(ENABLE_GDB)
+ExternalProject_Add(
+	gdb
+	PREFIX 				${CMAKE_BINARY_DIR}/gdb
+	URL 				http://ftp.gnu.org/gnu/gdb/gdb-6.8a.tar.bz2
+	URL_MD5				da20d043e6729f74b909bd507bcae5c9
+	CONFIGURE_COMMAND 	<SOURCE_DIR>/configure --with-sysroot=${SYSROOT} --target=${TARGET} --prefix=${TARGET_DIR} --program-prefix=${TARGET}- --disable-werror
+	BUILD_COMMAND 		make ${PARALLEL}
+	DEPENDS 			gcc2
+)
+
+ExternalProject_Add(
+	termcap
+	URL 				ftp://ftp.gnu.org/gnu/termcap/termcap-1.3.1.tar.gz
+	URL_MD5 			ffe6f86e63a3a29fa53ac645faaabdfa
+	CONFIGURE_COMMAND 	CC=${TARGET}-gcc RANLIB=${TARGET}-ranlib <SOURCE_DIR>/configure --target=${TARGET} --prefix=${SYSROOT}/usr/local/
+	BUILD_COMMAND 		make ${PARALLEL}
+	DEPENDS 			gcc2
+)
+
+ExternalProject_Add(
+	targetgdb
+	PREFIX 				${CMAKE_BINARY_DIR}/gdb
+	URL 				http://ftp.gnu.org/gnu/gdb/gdb-6.8a.tar.bz2
+	URL_MD5				da20d043e6729f74b909bd507bcae5c9
+	CONFIGURE_COMMAND 	LDFLAGS=-L${SYSROOT}/usr/local/lib <SOURCE_DIR>/configure --host=${TARGET} --prefix=${SYSROOT}/usr/local/ --disable-werror
+	BUILD_COMMAND 		make ${PARALLEL}
+	DEPENDS 			gcc2 termcap
+)
+endif()
+
+file(WRITE "${SYSROOT}/usr/bin/${TARGET}-pkg-config" "
+#!/bin/bash
+
+set -e
+export PKG_CONFIG_DIR=
+export PKG_CONFIG_LIBDIR=${SYSROOT}/usr/lib/pkgconfig:${SYSROOT}/usr/share/pkgconfig:${SYSROOT}/usr/local/lib/pkgconfig:${SYSROOT}/usr/local/share/pkgconfig
+export PKG_CONFIG_SYSROOT_DIR=${SYSROOT}
+
+exec pkg-config \"\$@\" | python -c \"import sys; print sys.stdin.read().replace('${SYSROOT}${SYSROOT}', '${SYSROOT}'),\" && test \${PIPESTATUS[0]} -eq 0
+")
+execute_process(COMMAND chmod +x ${SYSROOT}/usr/bin/${TARGET}-pkg-config)
+
+
+
+# add_custom_command(
+# 	OUTPUT ${BUILD_DEST}/bin
+# 	COMMAND ${CMAKE_COMMAND} -E make_directory ${BUILD_DEST}/bin
+# )
+
 #message("SMD_MAKE = ${SMD_MAKE}")
 
 add_custom_target(
 	toolchain
-	DEPENDS ${CMDS}
+	DEPENDS gcc2 glibc
 )
 
 add_custom_target(
@@ -87,7 +207,8 @@ ExternalProject_Add(
 		COMMAND sed -i -e "s,<sys/sysmacros.h>,\"sysmacros.h\"," IntelCE/kernel-13.11.10484.229643/linux-2.6.28/arch/x86/boot/tools/build.c
 		COMMAND sed -i -e "s/<elf.h>/\"elf.h\"/" IntelCE/kernel-13.11.10484.229643/linux-2.6.28/scripts/mod/mk_elfconfig.c
 		COMMAND sed -i -e "s/<elf.h>/\"elf.h\"/" IntelCE/kernel-13.11.10484.229643/linux-2.6.28/scripts/mod/modpost.h
-		COMMAND sed -i -E "s,make -C,make -j8 -C," IntelCE/kernel-13.11.10484.229643/build_all.sh
+#		COMMAND sed -i -E "s,make -C,make -j8 -C," IntelCE/kernel-13.11.10484.229643/build_all.sh
+		COMMAND sed -E "s,asmregparm,," -i IntelCE/kernel-13.11.10484.229643/linux-2.6.28/arch/x86/kernel/ptrace.c
 	CONFIGURE_COMMAND	""
 	INSTALL_COMMAND		${CMAKE_COMMAND} -E create_symlink ${BUILD_DEST}/kernel/linux-2.6.28/include/linux ${BUILD_DEST}/kernel/linux-2.6.28/include/generated
 		COMMAND			${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/pci-intelce_pm.h ${BUILD_DEST}/kernel/linux-2.6.28/include/linux
