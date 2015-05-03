@@ -12,7 +12,7 @@ set(PARALLEL "-j8" CACHE STRING "Arguments for make for parallel builds")
 set(TARGET "i686-cm-linux")
 set(TARGET_DIR "${SYSROOT}/usr")
 
-set(ENABLE_GDB OFF CACHE BOOL "Wether to build gdb or not")
+set(ENABLE_GDB OFF CACHE BOOL "Whether to build gdb or not")
 
 set(BUILD_DEST ${SYSROOT})
 set(ENV{BUILD_DEST} ${BUILD_DEST})
@@ -100,7 +100,7 @@ ExternalProject_Add(
 	# 	COMMAND 		${CMAKE_COMMAND} -E copy configure.new configure
 	# 	COMMAND 		chmod +x configure
 	BUILD_COMMAND		export BUILD_CFLAGS=-I/usr/local/Cellar/gettext/0.19.4/include/ && export BUILD_LDFLAGS=-L/usr/local/Cellar/gettext/0.19.4/lib/\ -lintl && make ${PARALLEL}
-	CONFIGURE_COMMAND	PATH=$ENV{PATH}:${TARGET_DIR}/bin/ CC=$ENV{TARGETCC} <SOURCE_DIR>/configure --build=${HOSTMACHINE} --target=${TARGET} --host=${TARGET} --enable-kernel=2.6.28 --prefix=/usr --with-headers=${TARGET_DIR}/include ac_cv_prog_BUILD_CC=/usr/local/bin/gcc-4.9  --program-prefix=${TARGET}- # libc_cv_ssp=no libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes libc_cv_ctors_header=yes
+	CONFIGURE_COMMAND	PATH=$ENV{PATH}:${TARGET_DIR}/bin/ CC=$ENV{TARGETCC} <SOURCE_DIR>/configure --build=${HOSTMACHINE} --target=${TARGET} --host=${TARGET} --enable-kernel=2.6.28 --prefix=/usr --with-headers=${TARGET_DIR}/include ac_cv_prog_BUILD_CC=/usr/local/bin/gcc-4.9  --program-prefix=${TARGET}-  libc_cv_ssp=no # libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes libc_cv_ctors_header=yes
 	INSTALL_COMMAND		make ${PARALLEL} install_root=${SYSROOT} install
 	DEPENDS boot-gcc
 )
