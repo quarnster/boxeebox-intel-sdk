@@ -1,12 +1,27 @@
-brew install doxygen
+# Preparations
 
-mkdir build
-cd build
-cmake ..
-make -j8
-# for me it errors out here after a while complaining about strlen, however it can't be that important as it doesn't happen when typing make again
-make
+	cd boxeebox-intel-sdk
+	mkdir build
+	git clone https://github.com/quarnster/boxeebox-intel-sdk.git
+	cd build
 
+# Prerequisites on darwin
+
+	brew install doxygen gcc49 gnu-sed
+	ln -s /usr/local/bin/gsed sed
+	export PATH=$PWD:$PATH
+	export CC=/usr/local/bin/gcc-4.9
+	export CXX=/usr/local/bin/g++-4.9
+	export CPP=/usr/local/bin/cpp-4.9
+	export LD=/usr/local/bin/gcc-4.9
+
+# Building
+
+	cmake ..
+	make -j8
+
+
+When the build fails, try just re-running "make" a couple of times and if the error persists, you'll probably have to tweak the CMakeLists.txt file a bit to suit your system (pull requests please) and re-run `make` a few times.
 
 
 lib/modules/pvrsrvkm.ko

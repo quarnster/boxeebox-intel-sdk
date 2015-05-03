@@ -37,8 +37,8 @@ const (
 	dsp1_off      = 0x2051c0
 	rodata_offset = 0x64180
 	input_ko      = "./lib/modules/ismdaudio.ko"
-	output_c0     = "./build/target/src/audio/core/audio_dsp_fw_kernel_dsp0.c"
-	output_c1     = "./build/target/src/audio/core/audio_dsp_fw_kernel_dsp1.c"
+	output_c0     = "./sysroot/src/audio/core/audio_dsp_fw_kernel_dsp0.c"
+	output_c1     = "./sysroot/src/audio/core/audio_dsp_fw_kernel_dsp1.c"
 )
 
 type bin2C struct {

@@ -17,7 +17,7 @@ set(ENABLE_GDB OFF CACHE BOOL "Wether to build gdb or not")
 set(BUILD_DEST ${SYSROOT})
 set(ENV{BUILD_DEST} ${BUILD_DEST})
 set(ENV{KERNEL_VER} linux-2.6.28)
-set(ENV{CROSS_COMPILE} ${BUILD_DEST}/bin/i686-cm-linux-)
+set(ENV{CROSS_COMPILE} ${BUILD_DEST}/usr/bin/i686-cm-linux-)
 set(ENV{ARCH} i386)
 set(ENV{FSROOT} ${BUILD_DEST})
 #message("export CROSS_COMPILE=$ENV{CROSS_COMPILE}")
@@ -38,9 +38,9 @@ foreach(CMD ${CMDS})
 	# 	DEPENDS ${BUILD_DEST}/bin
 	# )
 endforeach()
-set(ENV{TARGETCC} ${BUILD_DEST}/bin/i686-cm-linux-gcc)
+set(ENV{TARGETCC} ${BUILD_DEST}/usr/bin/i686-cm-linux-gcc)
 set(TARGETCMDS ${TARGETCMDS} TARGETCC=$ENV{TARGETCC})
-set(SMD_MAKE ARCH=$ENV{ARCH} CROSS_COMPILE=$ENV{CROSS_COMPILE} ${TARGETCMDS} BUILD_DEST=$ENV{BUILD_DEST} KERNEL_VER=$ENV{KERNEL_VER} make all)
+set(SMD_MAKE EXE_DIR=${TARGET_DIR}/bin ARCH=$ENV{ARCH} CROSS_COMPILE=$ENV{CROSS_COMPILE} ${TARGETCMDS} BUILD_DEST=$ENV{BUILD_DEST} KERNEL_VER=$ENV{KERNEL_VER} make all)
 
 
 
@@ -99,8 +99,8 @@ ExternalProject_Add(
 	# 	COMMAND 		cat configure | sed s,\ readelf\ ,\ ${TARGET_DIR}/bin/${TARGET}-readelf\ ,g > configure.new
 	# 	COMMAND 		${CMAKE_COMMAND} -E copy configure.new configure
 	# 	COMMAND 		chmod +x configure
-	BUILD_COMMAND		export BUILD_CFLAGS=-I/usr/local/Cellar/gettext/0.19.3/include/ && export BUILD_LDFLAGS=-L/usr/local/Cellar/gettext/0.19.3/lib/\ -lintl && make ${PARALLEL}
-	CONFIGURE_COMMAND	CC=$ENV{TARGETCC} <SOURCE_DIR>/configure --build=${HOSTMACHINE} --target=${TARGET} --host=${TARGET} --disable-nls --enable-kernel=2.6.28 --prefix=/usr --with-headers=${TARGET_DIR}/include ac_cv_prog_BUILD_CC=/usr/local/bin/gcc-4.9 libc_cv_ssp=no libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes libc_cv_ctors_header=yes --program-prefix=${TARGET}-
+	BUILD_COMMAND		export BUILD_CFLAGS=-I/usr/local/Cellar/gettext/0.19.4/include/ && export BUILD_LDFLAGS=-L/usr/local/Cellar/gettext/0.19.4/lib/\ -lintl && make ${PARALLEL}
+	CONFIGURE_COMMAND	PATH=$ENV{PATH}:${TARGET_DIR}/bin/ CC=$ENV{TARGETCC} <SOURCE_DIR>/configure --build=${HOSTMACHINE} --target=${TARGET} --host=${TARGET} --enable-kernel=2.6.28 --prefix=/usr --with-headers=${TARGET_DIR}/include ac_cv_prog_BUILD_CC=/usr/local/bin/gcc-4.9  --program-prefix=${TARGET}- # libc_cv_ssp=no libc_cv_forced_unwind=yes libc_cv_c_cleanup=yes libc_cv_ctors_header=yes
 	INSTALL_COMMAND		make ${PARALLEL} install_root=${SYSROOT} install
 	DEPENDS boot-gcc
 )
@@ -207,6 +207,9 @@ ExternalProject_Add(
 		COMMAND sed -i -e "s,<sys/sysmacros.h>,\"sysmacros.h\"," IntelCE/kernel-13.11.10484.229643/linux-2.6.28/arch/x86/boot/tools/build.c
 		COMMAND sed -i -e "s/<elf.h>/\"elf.h\"/" IntelCE/kernel-13.11.10484.229643/linux-2.6.28/scripts/mod/mk_elfconfig.c
 		COMMAND sed -i -e "s/<elf.h>/\"elf.h\"/" IntelCE/kernel-13.11.10484.229643/linux-2.6.28/scripts/mod/modpost.h
+		COMMAND sed -i -e "s/-m elf_i386//" IntelCE/kernel-13.11.10484.229643/linux-2.6.28/arch/x86/vdso/Makefile
+		COMMAND sed -i -e "62s/static void noinline/void/" -e "99s/static noinline void/void/" -e "271s/static noinline void/void/" -e "316s/static noinline void/void/" IntelCE/kernel-13.11.10484.229643/linux-2.6.28/kernel/mutex.c
+		COMMAND sed -i -e "s/__THROW __attribute_const__//" -e "37,+2cunsigned int gnu_dev_major(unsigned long long int __dev)" -e "44,+1cunsigned int gnu_dev_minor(unsigned long long int __dev)" -e "50,+1cunsigned long long int gnu_dev_makedev(unsigned int __major, unsigned int __minor)" -e "57d" IntelCE/kernel-13.11.10484.229643/linux-2.6.28/arch/x86/boot/tools/sysmacros.h
 #		COMMAND sed -i -E "s,make -C,make -j8 -C," IntelCE/kernel-13.11.10484.229643/build_all.sh
 		COMMAND sed -E "s,asmregparm,," -i IntelCE/kernel-13.11.10484.229643/linux-2.6.28/arch/x86/kernel/ptrace.c
 	CONFIGURE_COMMAND	""
@@ -317,6 +320,7 @@ ExternalProject_Add(
 	URL 				${CMAKE_SOURCE_DIR}/idl-None-SRC-13.11.10484.229643.tgz
 	SOURCE_DIR 			idl
 	BINARY_DIR 			idl/IntelCE/idl-13.11.10484.229643
+	PATCH_COMMAND		sed -i -e "128d" IntelCE/idl-13.11.10484.229643/idl/Makefile.inc
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE} install
@@ -330,6 +334,7 @@ ExternalProject_Add(
 	BINARY_DIR 			clock_control/IntelCE/clock_control-13.11.10484.229643
 	PATCH_COMMAND
 		COMMAND         sed -i -e "s/-pd//" IntelCE/clock_control-13.11.10484.229643/src/kernel/Makefile
+		COMMAND         sed -i -e "174s/-Werror//" IntelCE/clock_control-13.11.10484.229643/Makefile.include
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
@@ -341,7 +346,8 @@ ExternalProject_Add(
 	URL 				${CMAKE_SOURCE_DIR}/clock-None-SRC-13.11.10484.229643.tgz
 	SOURCE_DIR 			clock
 	BINARY_DIR 			clock/IntelCE/clock-13.11.10484.229643
-	PATCH_COMMAND		sed -i -e "55s/clock_control//" IntelCE/clock-13.11.10484.229643/src/src/Makefile
+	PATCH_COMMAND		sed -i -e "55s/clock_control//" -e "s/-Werror//" IntelCE/clock-13.11.10484.229643/src/src/Makefile
+		COMMAND			sed -i -e "s/-Werror//" IntelCE/clock-13.11.10484.229643/hal/hal/Makefile
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
@@ -358,6 +364,7 @@ ExternalProject_Add(
 	PATCH_COMMAND		sed -i -e "63s/user//" -e "130s/doc//" IntelCE/intel_ce_pm-13.11.10484.229643/Makefile
 		COMMAND         sed -i -e "s/-pd//" IntelCE/intel_ce_pm-13.11.10484.229643/kernel/Makefile
 		COMMAND         sed -i -e "s/-pd//" IntelCE/intel_ce_pm-13.11.10484.229643/kernel/lib/Makefile
+		COMMAND         sed -i -e "162s/-Werror//" IntelCE/intel_ce_pm-13.11.10484.229643/Makefile.include
 		COMMAND         ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/init_intel_ce_pm IntelCE/intel_ce_pm-13.11.10484.229643/init_intel_ce_pm
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
@@ -382,6 +389,7 @@ ExternalProject_Add(
 	SOURCE_DIR 			core
 	BINARY_DIR 			core/IntelCE/core-13.11.10484.229643
 	PATCH_COMMAND		sed -i -e "600s/from_tag_storage,/from_tag_storage=0,/" IntelCE/core-13.11.10484.229643/core/ismd_buffer_tags.c
+		COMMAND         sed -i -e "s/-Werror//" IntelCE/core-13.11.10484.229643/core/Makefile
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
@@ -395,7 +403,7 @@ ExternalProject_Add(
 	BINARY_DIR 			nandflash/IntelCE/nandflash-13.11.10484.229643
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
-	BUILD_COMMAND		PATH=$ENV{PATH}:${BUILD_DEST}/bin ${SMD_MAKE}
+	BUILD_COMMAND		PATH=$ENV{PATH}:${BUILD_DEST}/usr/bin ${SMD_MAKE}
 	DEPENDS kernel
 )
 
@@ -420,7 +428,7 @@ ExternalProject_Add(
 		COMMAND			sed -i -e "s/-pd//" IntelCE/display-13.11.10504.232647/src/lib/libvbd/Makefile
 		COMMAND			sed -i -e "s/-pd//" IntelCE/display-13.11.10504.232647/src/lib/libabd/Makefile
 		COMMAND			sed -i -e "s/-pd//" IntelCE/display-13.11.10504.232647/src/kernel/Makefile
-
+		COMMAND			sed -i -e "s/-Werror//" IntelCE/display-13.11.10504.232647/Makefile.include
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
@@ -435,22 +443,24 @@ ExternalProject_Add(
 	SOURCE_DIR 			audio
 	BINARY_DIR 			audio/IntelCE/audio-13.11.10504.232647
 	PATCH_COMMAND		sed -i -e "94a ifneq ($(strip $$(have_aud_inc)),)" -e "95a endif" IntelCE/audio-13.11.10504.232647/Makefile
+		COMMAND 		sed -i -e "295s/inline//" IntelCE/audio-13.11.10504.232647/core/audio_core.h
+		COMMAND			sed -i -e "s/-Werror//" IntelCE/audio-13.11.10504.232647/core/Makefile
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		CORE_A_NAME=dsp0 CORE_B_NAME=dsp1 ${SMD_MAKE}
 	DEPENDS core display audio_fw
 )
 
-ExternalProject_Add(
-	alsa_shim
-	URL 				${CMAKE_SOURCE_DIR}/alsa_shim-None-SRC-13.11.10504.232647.tgz
-	SOURCE_DIR 			alsa_shim
-	BINARY_DIR 			alsa_shim/IntelCE/alsa_shim-13.11.10504.232647
-	CONFIGURE_COMMAND 	""
-	INSTALL_COMMAND		""
-	BUILD_COMMAND		KERNEL_BUILD_DIR=${BUILD_DEST}/kernel/linux-2.6.28 ${SMD_MAKE}
-	DEPENDS audio
-)
+# ExternalProject_Add(
+# 	alsa_shim
+# 	URL 				${CMAKE_SOURCE_DIR}/alsa_shim-None-SRC-13.11.10504.232647.tgz
+# 	SOURCE_DIR 			alsa_shim
+# 	BINARY_DIR 			alsa_shim/IntelCE/alsa_shim-13.11.10504.232647
+# 	CONFIGURE_COMMAND 	""
+# 	INSTALL_COMMAND		""
+# 	BUILD_COMMAND		KERNEL_BUILD_DIR=${BUILD_DEST}/kernel/linux-2.6.28 ${SMD_MAKE}
+# 	DEPENDS audio
+# )
 
 ExternalProject_Add(
 	edl
@@ -459,7 +469,7 @@ ExternalProject_Add(
 	BINARY_DIR 			edl/IntelCE/edl-13.11.10504.232647
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
-	BUILD_COMMAND		PATH=$ENV{PATH}:${BUILD_DEST}/bin  ${SMD_MAKE}
+	BUILD_COMMAND		PATH=$ENV{PATH}:${BUILD_DEST}/usr/bin  ${SMD_MAKE}
 	DEPENDS audio
 )
 
@@ -481,9 +491,9 @@ ExternalProject_Add(
 	BINARY_DIR 			demux/IntelCE/demux-13.11.10484.229643
 	PATCH_COMMAND		sed -i -E "1251s/discon_detection_enabled\\s/discon_detection_enabled[stream_id]/" IntelCE/demux-13.11.10484.229643/ver3/driver/ismd_demux_tags_timing.c
 		COMMAND			sed -i -e "4692s/$<SEMICOLON>/=odd_or_even$<SEMICOLON>/" IntelCE/demux-13.11.10484.229643/ver3/driver/ismd_demux_api.c
-		COMMAND			sed -i -e "102s/clock_control//" IntelCE/demux-13.11.10484.229643/ver3/driver/Makefile
-		COMMAND			sed -i -e "52s/clock_control//" IntelCE/demux-13.11.10484.229643/ver2/hal/tsi/Makefile
-		COMMAND			sed -i -e "115s/clock_control//" IntelCE/demux-13.11.10484.229643/ver2/core/Makefile
+		COMMAND			sed -i -e "102s/clock_control//" -e "s/-Werror//" IntelCE/demux-13.11.10484.229643/ver3/driver/Makefile
+		COMMAND			sed -i -e "52s/clock_control//" -e "s/-Werror//" IntelCE/demux-13.11.10484.229643/ver2/hal/tsi/Makefile
+		COMMAND			sed -i -e "115s/clock_control//" -e "s/-Werror//" IntelCE/demux-13.11.10484.229643/ver2/core/Makefile
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
@@ -495,6 +505,8 @@ ExternalProject_Add(
 	URL 				${CMAKE_SOURCE_DIR}/viddec_fw-SRC-13.11.10504.232647.tgz
 	SOURCE_DIR 			viddec_fw
 	BINARY_DIR 			viddec_fw/IntelCE/viddec_fw-13.11.10504.232647
+	PATCH_COMMAND 		sed -i -e "s/-Werror//" IntelCE/viddec_fw-13.11.10504.232647/host/decoder/Makefile
+		COMMAND			sed -i -e "s/-Werror//" IntelCE/viddec_fw-13.11.10504.232647/host/parser/Makefile
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
@@ -506,6 +518,10 @@ ExternalProject_Add(
 	URL 				${CMAKE_SOURCE_DIR}/viddec-DUAL-SRC-13.11.10504.232647.tgz
 	SOURCE_DIR 			viddec
 	BINARY_DIR 			viddec/IntelCE/viddec-13.11.10504.232647
+	PATCH_COMMAND		sed -i -e "s/-Werror//" IntelCE/viddec-13.11.10504.232647/hal/Makefile
+		COMMAND 		sed -i -e "s/-Werror//" IntelCE/viddec-13.11.10504.232647/src/Makefile
+		COMMAND 		sed -i -e "s/-Werror//" IntelCE/viddec-13.11.10504.232647/version2/hal/gen4/Makefile
+		COMMAND 		sed -i -e "s/-Werror//" IntelCE/viddec-13.11.10504.232647/version2/src/Makefile
 	# PATCH_COMMAND		sed -i -e "242d" -e "252d" -e "264,268d" IntelCE/viddec-13.11.10504.232647/src/ismd_viddec_pvt.h
 	# 	COMMAND 		sed -i -e "238d" -e "248d" -e "260,265d" IntelCE/viddec-13.11.10504.232647/version2/src/ismd_viddec_pvt.h
 	CONFIGURE_COMMAND 	""
@@ -552,6 +568,7 @@ ExternalProject_Add(
 	URL 				${CMAKE_SOURCE_DIR}/vidpproc-None-SRC-13.11.10484.229643.tgz
 	SOURCE_DIR 			vidpproc
 	BINARY_DIR 			vidpproc/IntelCE/vidpproc-13.11.10484.229643
+	PATCH_COMMAND 		sed -i -e "s/-Werror//" IntelCE/vidpproc-13.11.10484.229643/core/Makefile
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
@@ -563,9 +580,7 @@ ExternalProject_Add(
 	URL 				${CMAKE_SOURCE_DIR}/vidrend-None-SRC-13.11.10504.232647.tgz
 	SOURCE_DIR 			vidrend
 	BINARY_DIR 			vidrend/IntelCE/vidrend-13.11.10504.232647
-	# PATCH_COMMAND		sed -i -e "419,421d" -e "5774,5820d" -e "5823,5857d" IntelCE/vidrend-13.11.10504.232647/ismd_vidrend.c
-	# 	COMMAND			sed -i -e "291,293d" IntelCE/vidrend-13.11.10504.232647/vidrend.h
-	# 	COMMAND			sed -i -e "849,856d" -e "859d" IntelCE/vidrend-13.11.10504.232647/vidrend_th.c
+	PATCH_COMMAND 		sed -i -e "s/-Werror//" IntelCE/vidrend-13.11.10504.232647/Makefile
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
@@ -591,6 +606,7 @@ ExternalProject_Add(
 	PATCH_COMMAND		sed -i -e "62a #include <linux/slab.h>" IntelCE/avcap-13.11.10504.232647/src/kernel/core/avcap_core_queue.c
 		COMMAND			sed -i -e "61a #include <linux/slab.h>" IntelCE/avcap-13.11.10504.232647/src/kernel/native_synthetic/synth_render.c
 		COMMAND			sed -i -e "69d" IntelCE/avcap-13.11.10504.232647/Makefile
+		COMMAND			sed -i -e "s/-Werror//" IntelCE/avcap-13.11.10504.232647/Makefile.include
 		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/lib/libvidcap_user/Makefile
 		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/lib/libvidcap_kernel/Makefile
 		COMMAND         sed -i -e "s/-pd//" IntelCE/avcap-13.11.10504.232647/src/kernel/core/Makefile
@@ -609,6 +625,7 @@ ExternalProject_Add(
 	URL 				${CMAKE_SOURCE_DIR}/bufmon-None-SRC-13.11.10484.229643.tgz
 	SOURCE_DIR 			bufmon
 	BINARY_DIR 			bufmon/IntelCE/bufmon-13.11.10484.229643
+	PATCH_COMMAND		sed -i -e "s/-Werror//" IntelCE/bufmon-13.11.10484.229643/Makefile
 	CONFIGURE_COMMAND 	""
 	INSTALL_COMMAND		""
 	BUILD_COMMAND		${SMD_MAKE}
