@@ -1,13 +1,17 @@
 # Preparations
 
+On a case sensitive file system (probably?):
+
+	git clone --depth=1 https://github.com/quarnster/boxeebox-intel-sdk.git
 	cd boxeebox-intel-sdk
 	mkdir build
-	git clone https://github.com/quarnster/boxeebox-intel-sdk.git
 	cd build
 
 # Prerequisites on darwin
 
-	brew install doxygen gcc49 gnu-sed
+	brew install doxygen gcc49 gnu-sed gettext gawk
+	brew link --force gettext gmp4 libmpc08 mpfr2 isl011
+	ulimit -n 1024
 	ln -s /usr/local/bin/gsed sed
 	export PATH=$PWD:$PATH
 	export CC=/usr/local/bin/gcc-4.9
